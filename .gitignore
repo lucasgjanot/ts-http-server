@@ -1,0 +1,52 @@
+# =========================
+# Node + TypeScript Project
+# =========================
+
+# Build output
+dist/
+build/
+out/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Node dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*.local
+
+# Coverage (e.g., from Jest)
+coverage/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+
+# Temporary files
+*.tmp
+*.temp
+
+# Optional: lock files (if you only want one)
+# Uncomment if you don’t want to commit them
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Optional: if using Next.js, React, etc.
+.next/
+.cache/
