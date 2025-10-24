@@ -1,41 +1,27 @@
-import express, { NextFunction } from "express";
-import { Request, Response } from "express";
-import { config } from "./config.js";
+import express from "express";
+import { handlerReset } from "./admin/metrics/reset.js";
+import { middlewareLogging, middlewareMetricsInc } from "./api/middlewares.js";
+import { handlerReadiness } from "./api/readiness.js";
+import { handlerMetrics } from "./admin/metrics/metrics.js";
+import { handlerChirpsValidate } from "./api/chirps.js";
 
 const app = express();
-const port = 8080;
+const PORT = 8080;
 
 app.use(middlewareLogging);
+app.use(express.json())
+
 app.use("/app", middlewareMetricsInc, express.static("./src/app"))
-app.all("/healthz", handlerReadiness)
 
-app.get("/metrics", (req: Request, res: Response) => {
-    res.set("Content-Type", "text/plain; charset=utf-8");
-    res.status(200).send(`Hits: ${config.fileserverHits}`)
-})
+app.all("/api/healthz", handlerReadiness)
 
-app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+app.get("/admin/metrics", handlerMetrics)
+
+app.post("/admin/reset", handlerReset)
+
+app.post("/api/validate_chirp", handlerChirpsValidate)
+
+app.listen(PORT, () => {
+    console.log(`Server is running at http://localhost:${PORT}`);
 });
 
-function handlerReadiness(req: Request, res: Response) {
-  res.set("Content-Type", "text/plain; charset=utf-8");
-  res.status(200).send("OK");
-}
-
-type Middleware = (req: Request, res: Response, next: NextFunction) => void;
-
-function middlewareLogging(req: Request, res: Response, next: NextFunction) {
-    res.on("finish", () => {
-        const statusCode = res.statusCode
-        if (statusCode !== 200) {
-            console.log(`[NON-OK] ${req.method} ${req.url} - Status: ${statusCode}`)
-        }
-    });
-    next();
-}
-
-function middlewareMetricsInc(req: Request, res: Response, next: NextFunction) {
-    config.fileserverHits++;
-    next();
-}
