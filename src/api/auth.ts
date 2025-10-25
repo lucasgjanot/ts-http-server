@@ -1,40 +1,49 @@
-import { hash, verify } from "argon2";
 import { Request, Response } from "express";
 import { BadRequestError, UserNotAuthenticatedError } from "./errors.js";
-import { User } from "src/db/schema";
-import { getUserbyEmail } from "src/db/query/user";
-import { respondWithJSON } from "./json";
-import { publicUser } from "./users";
+import { User } from "../db/schema.js";
+import { getUserbyEmail } from "../db/query/user.js";
+import { UserResponse, userResponse } from "./users.js";
+import { respondWithJSON } from "./json.js";
+import { checkPasswordHash, makeJWT } from "../auth.js";
+import { config } from "../config.js";
 
-export async function hashPassword(password: string) {
-    const hashedPassword = hash(password);
-    return password;
-}
+const JWT_DEFAULT_DURATION = config.jwt.defaultDuration;
 
-export async function checkPasswordHash(password: string, hash: string) {
-    return verify(hash,password);
-}
+type LoginResponse = UserResponse & {
+  token: string;
+};
 
 export async function handlerLogin(req: Request, res: Response) {
     type Parameters = {
         email: string,
-        password: string
+        password: string,
+        expiresIn?: number
     };
 
     const params: Parameters = req.body;
 
     if (!params.email || !params.password) {
-        throw new BadRequestError("Missing required fields");
+        throw new BadRequestError("missing required fields");
     }
 
-    const user: User = await getUserbyEmail(params.email)
+    const user: User = await getUserbyEmail(params.email);
     if (!user) {
-        throw new UserNotAuthenticatedError("Incorrect email or password")
+        throw new UserNotAuthenticatedError("invalid username or password");
+    }
+    const validPassword = await checkPasswordHash(params.password, user.hashedPassword)
+    if (!validPassword) {
+        throw new UserNotAuthenticatedError("invalid username or password");
     }
 
-    if (!checkPasswordHash(params.password, user.hashedPassword)) {
-        throw new UserNotAuthenticatedError("Incorrect email or password")
-    }
+    const duration = params.expiresIn && params.expiresIn <= JWT_DEFAULT_DURATION 
+        ? params.expiresIn
+        : 600;
 
-    respondWithJSON(res, 200, publicUser(user))
+    const token = makeJWT(user.id, duration);
+    
+    const response: LoginResponse = {
+        ...userResponse(user),
+        token
+    };
+    respondWithJSON(res, 200, response);
 }

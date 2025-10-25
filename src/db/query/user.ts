@@ -26,3 +26,11 @@ export async function getUserbyEmail(email: string) {
         .where(eq(users.email, email))
     return result;
 }
+
+export async function getUserbyId(id: string) {
+    const [result] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, id))
+    return result;
+}

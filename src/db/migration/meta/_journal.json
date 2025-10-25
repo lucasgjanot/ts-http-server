@@ -22,6 +22,13 @@
       "when": 1761338656689,
       "tag": "0002_stormy_wrecker",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1761358317383,
+      "tag": "0003_giant_black_cat",
+      "breakpoints": true
     }
   ]
 }

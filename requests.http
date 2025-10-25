@@ -1,11 +1,8 @@
 @URL=http://localhost:8080
 
-GET {{URL}}/api/ggg
-
 ###
 
 POST {{URL}}/admin/reset
-
 
 ###
 
@@ -13,24 +10,34 @@ POST {{URL}}/api/users
 Content-Type: application/json
 
 {
-  "email": "janot@example.com"
+  "email": "mike@bettercall.com",
+  "password": "98765"
 }
 
 ###
 
+POST {{URL}}/api/login
+Content-Type: application/json
+
+{
+  "email": "saul@bettercall.com",
+  "password": "123456"
+}
+
+###
 POST {{URL}}/api/chirps
 Content-Type: application/json
 
 {
   "body": "teste",
-  "userId": "7464b378-7df9-4bbc-bcf0-a762d37cdacc"
+  "userId": "68d0f7ed-933f-4628-8233-733bf8c48882"
 }
 
 ###
 GET {{URL}}/api/chirps
 Content-Type: application/json
 ###
-GET {{URL}}/api/chirps/c31aa9db-1363-49c9-9f4a-067e02822131
+GET {{URL}}/api/chirps/3cd5c7c6-01bd-49fc-905a-437db9b8d8fb
 Content-Type: application/json
 
 

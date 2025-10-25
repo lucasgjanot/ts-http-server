@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
 import { respondWithJSON } from "./json.js";
-import { BadRequestError, ConflictError, NotFoundError } from "./errors.js";
-import { Chirp, NewChirp } from "../db/schema.js";
-import { CreateChirp, getChirpById, getChirps } from "../db/query/chirp.js";
+import { BadRequestError, NotFoundError} from "./errors.js";
+import { Chirp, NewChirp, User } from "../db/schema.js";
+import { createChirp, getChirpById, getChirps } from "../db/query/chirp.js";
+import { getUserbyId } from "../db/query/user.js"
+import { getBearerToken, validateJWT } from "../auth.js";
+
 
 const MAX_CHIRP_LENGTH = 140;
 
@@ -12,9 +15,9 @@ const BAD_WORDS = [
     "fornax"
 ]
 
-export type PublicChirp = Pick<Chirp,"id" | "body" | "userId">
+export type ChirpResponse = Pick<Chirp,"id" | "body" | "userId">
 
-export function publicChirp(chirp: Chirp) : PublicChirp {
+export function chirpResponse(chirp: Chirp) : ChirpResponse {
   const {id, body, userId} = chirp;
   return {id, body, userId};
 }
@@ -49,13 +52,19 @@ function getCleanedBody(body: string, badWords: string[]) {
 export async function handlerCreateChirps(req: Request, res: Response) {
   type Parameters = {
     body: string;
-    userId: string
   };
 
   const params: Parameters = req.body;
+  const token = getBearerToken(req);
+  const userId = validateJWT(token);
 
-  if (!params.body || !params.userId) {
-    throw new BadRequestError("Missing required fields")
+  if (!params.body) {
+    throw new BadRequestError("missing required fields")
+  }
+
+  const user: User = await getUserbyId(userId);
+  if (!user) {
+    throw new NotFoundError(`User with id ${userId} not found`);
   }
 
   if (params.body.length > MAX_CHIRP_LENGTH) {
@@ -64,23 +73,24 @@ export async function handlerCreateChirps(req: Request, res: Response) {
 
   const cleaned = validateChirp(params.body);
 
-  const newChirp: NewChirp = {body: cleaned, userId: params.userId};
-  const result = await CreateChirp(newChirp);
+  const newChirp: NewChirp = {body: cleaned, userId: userId};
+  const result = await createChirp(newChirp);
 
-  respondWithJSON(res, 201, publicChirp(result));
+  respondWithJSON(res, 201, chirpResponse(result));
 }
 
 export async function handlerGetChirps(req: Request, res: Response) {
   const result = await getChirps();
-  respondWithJSON(res, 200, result.map((chirp) => publicChirp(chirp)));
+  respondWithJSON(res, 200, result.map((chirp) => chirpResponse(chirp)));
 }
 
 export async function handlerGetChirpById(req: Request, res: Response) {
-  const { chirpId } = req.params;
-
+  const { chirpId} = req.params;
   const chirp = await getChirpById(chirpId);
+
   if (!chirp) {
     throw new NotFoundError(`Chirp with chirpId: ${chirpId} not found`);
   }
-  respondWithJSON(res, 200, publicChirp(chirp));
+
+  respondWithJSON(res, 200, chirpResponse(chirp));
 }

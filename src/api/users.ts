@@ -3,11 +3,12 @@ import { BadRequestError } from "./errors.js";
 import { respondWithJSON } from "./json.js";
 import { createUser } from "../db/query/user.js";
 import { User, NewUser } from "../db/schema.js";
-import { hashPassword } from "./auth.js";
+import { hashPassword } from "../auth.js";
 
-export type PublicUser = Omit<User, "hashedPassword">;
 
-export function publicUser(user: User): PublicUser {
+export type UserResponse = Omit<User, "hashedPassword">;
+
+export function userResponse(user: User): UserResponse {
     const { id, email, createdAt, updatedAt} = user;
     return {id, email, createdAt, updatedAt};
 }
@@ -32,6 +33,6 @@ export async function handlerCreateUser(req: Request, res: Response) {
         throw new BadRequestError("User already exists");
     }
 
-    respondWithJSON(res, 201, publicUser(result));
+    respondWithJSON(res, 201, userResponse(result));
 }
 
