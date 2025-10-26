@@ -1,24 +1,43 @@
 import { eq } from "drizzle-orm";
 import { db } from "../index.js";
 import { chirps, NewChirp } from "../schema.js";
+import { DatabaseError } from "../../errors.js";
+
+
 
 export async function createChirp(chirp: NewChirp) {
-    const [result] = await db
-        .insert(chirps)
-        .values(chirp)
-        .onConflictDoNothing()
-        .returning();
-    return result;
+    try {
+        const [result] = await db
+            .insert(chirps)
+            .values(chirp)
+            .onConflictDoNothing()
+            .returning();
+        return result;
+    } catch (err) {
+        throw new DatabaseError("Failed to create chirp", err);
+    }
 }
 
 export async function getChirps() {
-    const result = await db
-        .select().from(chirps)
-    return result
+    try {
+        const result = await db
+            .select()
+            .from(chirps)
+        return result
+    } catch (err) {
+        throw new DatabaseError("Failed to retrieve chirps", err);
+    }
+    
 }
 
 export async function getChirpById(id: string) {
-    const [result] = await db
-        .select().from(chirps).where(eq(chirps.id, id));
-    return result
+    try {
+        const [result] = await db
+            .select()
+            .from(chirps)
+            .where(eq(chirps.id, id));
+        return result;
+    } catch (err) {
+        throw new DatabaseError("Failed to retrieve chirp", err);
+    }
 }

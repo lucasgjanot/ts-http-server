@@ -6,7 +6,7 @@ import {
   validateJWT,
   extractBearerToken,
 } from "../src/auth.js";
-import { BadRequestError, UserNotAuthenticatedError } from "../src/api/errors.js";
+import { BadRequestError, UserNotAuthenticatedError } from "../src/errors.js";
 
 describe("Password Hashing", () => {
   const password1 = "correctPassword123!";
@@ -46,13 +46,12 @@ describe("Password Hashing", () => {
 });
 
 describe("JWT Functions", () => {
-  const secret = "secret";
   const wrongSecret = "wrong_secret";
   const userID = "some-unique-user-id";
   let validToken: string;
 
   beforeAll(() => {
-    validToken = makeJWT(userID, 3600);
+    validToken = makeJWT(userID);
   });
 
   it("should validate a valid token", () => {

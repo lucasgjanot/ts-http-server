@@ -2,12 +2,14 @@ import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import type { JwtPayload } from "jsonwebtoken";
 
-import { BadRequestError, UserNotAuthenticatedError } from "./api/errors.js";
+import { BadRequestError, UserNotAuthenticatedError } from "./errors.js";
 import { Request } from "express";
 import { config } from "./config.js";
+import { randomBytes } from "crypto";
 
 const TOKEN_ISSUER = config.jwt.issuer;
 const SECRET = config.jwt.secret;
+const JWT_DURATION = config.jwt.duration;
 
 
 type Payload = Pick<JwtPayload, "iss" | "sub" | "iat" | "exp">;
@@ -25,16 +27,15 @@ export async function checkPasswordHash(password: string, hashed: string) {
     }
 }
 
-export function makeJWT(userId: string, expiresIn: number): string {
+export function makeJWT(userId: string, secret: string = SECRET): string {
     const issuedAt = Math.floor(Date.now() / 1000);
-    const expiresAt = issuedAt + expiresIn;
     const payload: Payload = {
         iss: TOKEN_ISSUER,
         sub: userId,
         iat: issuedAt,
-        exp: expiresAt,
+        exp: issuedAt + JWT_DURATION
     };
-    const token = jwt.sign(payload, SECRET, { algorithm: "HS256" })
+    const token = jwt.sign(payload, secret, { algorithm: "HS256" })
     return token;
 }
 
@@ -72,4 +73,8 @@ export function extractBearerToken(header: string) {
     throw new BadRequestError("Malformed authorization header");
   }
   return splitAuth[1];
+}
+
+export function makeRefreshToken() {
+  return randomBytes(32).toString('hex')
 }

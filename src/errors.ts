@@ -37,3 +37,14 @@ export class ConflictError extends HttpError {
     super(409, message);
   }
 }
+
+
+export class DatabaseError extends Error {
+  public originalError: unknown;
+
+  constructor(message: string, originalError?: unknown) {
+    super(message);
+    this.name = "DatabaseError";
+    this.originalError = originalError;
+  }
+}

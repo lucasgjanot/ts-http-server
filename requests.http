@@ -20,8 +20,8 @@ POST {{URL}}/api/login
 Content-Type: application/json
 
 {
-  "email": "saul@bettercall.com",
-  "password": "123456"
+  "email": "mike@bettercall.com",
+  "password": "98765"
 }
 
 ###

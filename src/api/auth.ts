@@ -1,28 +1,30 @@
 import { Request, Response } from "express";
-import { BadRequestError, UserNotAuthenticatedError } from "./errors.js";
-import { User } from "../db/schema.js";
+import { BadRequestError, UserNotAuthenticatedError } from "../errors.js";
+import { NewRefreshTokens, RefreshTokens, User } from "../db/schema.js";
 import { getUserbyEmail } from "../db/query/user.js";
 import { UserResponse, userResponse } from "./users.js";
 import { respondWithJSON } from "./json.js";
-import { checkPasswordHash, makeJWT } from "../auth.js";
+import { checkPasswordHash, getBearerToken, makeJWT, makeRefreshToken, validateJWT } from "../auth.js";
+import { createRefreshToken, getRefreshToken, revokeRefreshToken, userForRefreshToken } from "../db/query/refreshtoken.js";
 import { config } from "../config.js";
 
-const JWT_DEFAULT_DURATION = config.jwt.defaultDuration;
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 type LoginResponse = UserResponse & {
   token: string;
+  refreshToken: string
 };
 
 export async function handlerLogin(req: Request, res: Response) {
-    type Parameters = {
+    type parameters = {
         email: string,
-        password: string,
-        expiresIn?: number
+        password: string
     };
 
-    const params: Parameters = req.body;
+    const params: parameters = req.body;
 
-    if (!params.email || !params.password) {
+    if (!params || !params.email || !params.password) {
         throw new BadRequestError("missing required fields");
     }
 
@@ -35,15 +37,51 @@ export async function handlerLogin(req: Request, res: Response) {
         throw new UserNotAuthenticatedError("invalid username or password");
     }
 
-    const duration = params.expiresIn && params.expiresIn <= JWT_DEFAULT_DURATION 
-        ? params.expiresIn
-        : 600;
-
-    const token = makeJWT(user.id, duration);
+    const token = makeJWT(user.id);
+    const refreshToken = makeRefreshToken();
     
     const response: LoginResponse = {
         ...userResponse(user),
-        token
+        token,
+        refreshToken
     };
+    const createdAt = new Date();
+    const expiresAt = new Date(createdAt.getTime() + config.refreshToken.duration * MS_PER_DAY)
+    const result = await createRefreshToken({
+        userId: user.id,
+        token: refreshToken,
+        createdAt,
+        expiresAt
+
+    } satisfies NewRefreshTokens)
+    if (!result) {
+        throw Error("Refresh token collision — failed to create unique token");
+    }
     respondWithJSON(res, 200, response);
+}
+
+export async function handlerRefresh(req: Request, res: Response) {
+  let refreshToken = getBearerToken(req);
+
+  const result = await userForRefreshToken(refreshToken);
+  if (!result) {
+    throw new UserNotAuthenticatedError("invalid refresh token");
+  }
+
+  const user = result.user;
+  const accessToken = makeJWT(user.id);
+
+  type response = {
+    token: string;
+  };
+
+  respondWithJSON(res, 200, {
+    token: accessToken,
+  } satisfies response);
+}
+
+export async function handlerRevoke(req: Request, res: Response) {
+  const refreshToken = getBearerToken(req);
+  await revokeRefreshToken(refreshToken);
+  res.status(204).send();
 }

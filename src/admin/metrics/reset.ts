@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { config } from "../../config.js";
 import { deleteUsers } from "../../db/query/user.js";
-import { UserForbiddenError } from "../../api/errors.js";
+import { UserForbiddenError } from "../../errors.js";
 
 
 export async function handlerReset(_: Request, res: Response) {

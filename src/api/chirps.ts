@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { respondWithJSON } from "./json.js";
-import { BadRequestError, NotFoundError} from "./errors.js";
+import { BadRequestError, NotFoundError} from "../errors.js";
 import { Chirp, NewChirp, User } from "../db/schema.js";
 import { createChirp, getChirpById, getChirps } from "../db/query/chirp.js";
 import { getUserbyId } from "../db/query/user.js"
@@ -50,15 +50,15 @@ function getCleanedBody(body: string, badWords: string[]) {
 }
 
 export async function handlerCreateChirps(req: Request, res: Response) {
-  type Parameters = {
+  type parameters = {
     body: string;
   };
 
-  const params: Parameters = req.body;
+  const params: parameters = req.body;
   const token = getBearerToken(req);
   const userId = validateJWT(token);
 
-  if (!params.body) {
+  if (!params || !params.body) {
     throw new BadRequestError("missing required fields")
   }
 
