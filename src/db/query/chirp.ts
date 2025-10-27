@@ -41,3 +41,14 @@ export async function getChirpById(id: string) {
         throw new DatabaseError("Failed to retrieve chirp", err);
     }
 }
+
+export async function deleteChirp(id: string) {
+    try {
+        const [result] = await db
+            .delete(chirps)
+            .where(eq(chirps.id, id));
+        return result;
+    } catch (err) {
+        throw new DatabaseError("Failed to retrieve chirp", err);
+    }
+}

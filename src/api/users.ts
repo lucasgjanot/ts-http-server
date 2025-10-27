@@ -28,7 +28,7 @@ export async function handlerCreateUser(req: Request, res: Response) {
         throw new BadRequestError("Missing required fields");
     }
 
-    log(LogLevel.INFO, `Iniciando criação do usuário com email: ${params.email}`);
+    log(LogLevel.DEBUG, `Starting user creation with email: ${params.email}`);
 
     try {
         const hashedPassword = await hashPassword(params.password);
@@ -39,7 +39,7 @@ export async function handlerCreateUser(req: Request, res: Response) {
             throw new BadRequestError("User already exists");
         }
 
-        log(LogLevel.INFO, `Usuário criado com sucesso: ${user.id}`);
+        log(LogLevel.INFO, `User successfully created: ${user.id}`);
         respondWithJSON(res, 201, userResponse(user));
     } catch (error) {
         throw error;
@@ -60,10 +60,11 @@ export async function handlerUpdateUser(req: Request, res: Response) {
     }
 
     const hashedPassword = await hashPassword(params.password);
-    
+    log(LogLevel.DEBUG, `Starting user update: ${user.id}`);
     const updatedUser: User = await upateUser(user.email, params.email, hashedPassword)
     if (!updatedUser) {
         throw new Error("Failed to update user")
     }
     respondWithJSON(res,200,userResponse(updatedUser));
+    log(LogLevel.INFO, `User successfully updated: ${user.id}`);
 }

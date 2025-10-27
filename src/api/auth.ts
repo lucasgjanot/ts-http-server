@@ -20,7 +20,7 @@ type LoginResponse = UserResponse & {
 export async function handlerLogin(req: Request, res: Response) {
     const params = req.body as { email: string; password: string };
 
-    log(LogLevel.INFO, `Login attempt for email: ${params?.email}`);
+    log(LogLevel.DEBUG, `Login attempt for email: ${params?.email}`);
 
     if (!params || !params.email || !params.password) {
         throw new BadRequestError("missing required fields");
@@ -61,7 +61,7 @@ export async function handlerLogin(req: Request, res: Response) {
 
 export async function handlerRefresh(req: Request, res: Response) {
     const refreshToken = getBearerToken(req);
-    log(LogLevel.INFO, `Refresh token attempt`);
+    log(LogLevel.DEBUG, `Refresh token attempt`);
 
     const result = await userForRefreshToken(refreshToken);
     const user = result.user;
@@ -73,7 +73,7 @@ export async function handlerRefresh(req: Request, res: Response) {
 
 export async function handlerRevoke(req: Request, res: Response) {
     const refreshToken = getBearerToken(req);
-    log(LogLevel.INFO, `Revoking refresh token`);
+    log(LogLevel.DEBUG, `Revoking refresh token`);
 
     await revokeRefreshToken(refreshToken);
 

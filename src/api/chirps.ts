@@ -40,7 +40,7 @@ export async function handlerCreateChirps(req: Request, res: Response) {
   const token = getBearerToken(req);
   const userId = validateJWT(token);
 
-  log(LogLevel.INFO, `User ${userId} is attempting to create a chirp`);
+  log(LogLevel.DEBUG, `User ${userId} is attempting to create a chirp`);
 
   if (!params?.body) {
     throw new BadRequestError("missing required fields");
@@ -60,14 +60,14 @@ export async function handlerCreateChirps(req: Request, res: Response) {
 }
 
 export async function handlerGetChirps(req: Request, res: Response) {
-  log(LogLevel.INFO, `Fetching all chirps`);
+  log(LogLevel.DEBUG, `Fetching all chirps`);
   const result = await getChirps();
   respondWithJSON(res, 200, result.map(chirpResponse));
 }
 
 export async function handlerGetChirpById(req: Request, res: Response) {
   const { chirpId } = req.params;
-  log(LogLevel.INFO, `Fetching chirp with id ${chirpId}`);
+  log(LogLevel.DEBUG, `Fetching chirp with id ${chirpId}`);
   const chirp = await getChirpById(chirpId);
 
   if (!chirp) {
