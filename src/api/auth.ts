@@ -4,18 +4,20 @@ import { NewRefreshTokens, User } from "../db/schema.js";
 import { getUserbyEmail } from "../db/query/user.js";
 import { UserResponse, userResponse } from "./users.js";
 import { respondWithJSON } from "./json.js";
-import { checkPasswordHash, getBearerToken, makeJWT, makeRefreshToken } from "../auth.js";
+import { checkPasswordHash, getBearerToken, handleLoginSuccess, makeJWT, makeRefreshToken } from "../auth.js";
 import { createRefreshToken, revokeRefreshToken, userForRefreshToken } from "../db/query/refreshtoken.js";
 import { config } from "../config.js";
 import { log } from "../logger.js";
 import { LogLevel } from "../config.js";
+import { ConsoleLogWriter } from "drizzle-orm";
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-type LoginResponse = UserResponse & {
-  token: string;
-  refreshToken: string;
-};
+type TokenResponse = {
+    token: string;
+    refreshToken: string;
+}
+type LoginResponse = UserResponse & TokenResponse;
+
 
 export async function handlerLogin(req: Request, res: Response) {
     const params = req.body as { email: string; password: string };
@@ -36,24 +38,13 @@ export async function handlerLogin(req: Request, res: Response) {
         throw new UserNotAuthenticatedError("invalid username or password");
     }
 
-    const token = makeJWT(user.id);
-    const refreshToken = makeRefreshToken();
+    const { token, refreshToken } = await handleLoginSuccess(user.id);
 
     const response: LoginResponse = {
         ...userResponse(user),
         token,
         refreshToken
     };
-
-    const createdAt = new Date();
-    const expiresAt = new Date(createdAt.getTime() + config.refreshToken.duration * MS_PER_DAY);
-
-    const result = await createRefreshToken({
-        userId: user.id,
-        token: refreshToken,
-        createdAt,
-        expiresAt
-    } satisfies NewRefreshTokens);
 
     log(LogLevel.INFO, `User logged in successfully: ${user.id}`);
     respondWithJSON(res, 200, response);
@@ -64,11 +55,16 @@ export async function handlerRefresh(req: Request, res: Response) {
     log(LogLevel.DEBUG, `Refresh token attempt`);
 
     const result = await userForRefreshToken(refreshToken);
+    if (!result) throw new UserNotAuthenticatedError("invalid token")
     const user = result.user;
-    const accessToken = makeJWT(user.id);
+    const revoked = revokeRefreshToken(refreshToken)
+
+    const { token: newJwt, refreshToken: newRefreshToken } = await handleLoginSuccess(user.id);
+
+
 
     log(LogLevel.INFO, `Refresh token successful for user: ${user.id}`);
-    respondWithJSON(res, 200, { token: accessToken });
+    respondWithJSON(res, 200, { token: newJwt, refreshToken: newRefreshToken } satisfies TokenResponse);
 }
 
 export async function handlerRevoke(req: Request, res: Response) {

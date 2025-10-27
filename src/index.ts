@@ -1,4 +1,4 @@
-import express from "express";
+import express, { application } from "express";
 import { handlerReset } from "./admin/metrics/reset.js";
 import { handlerReadiness } from "./api/readiness.js";
 import { handlerMetrics } from "./admin/metrics/metrics.js";
@@ -8,8 +8,9 @@ import { handlerLogin, handlerRefresh, handlerRevoke } from "./api/auth.js";
 import { accessLogMiddleware } from "./middlewares/acceslog.js";
 import { middlewareMetricsInc } from "./middlewares/metrics.js";
 import { errorLogMiddleware } from "./middlewares/errorlog.js";
-import { handlerCreateChirps, handlerGetChirpById, handlerGetChirps } from "./api/chirps.js";
+import { handlerCreateChirps, handlerDeleteChirp, handlerGetChirpById, handlerGetChirps } from "./api/chirps.js";
 import { log } from "./logger.js";
+import { handlerPolkaWebhook } from "./api/webhooks.js";
 
 const app = express();
 const PORT = config.api.port;
@@ -64,10 +65,18 @@ app.get("/api/chirps/:chirpId", (req, res, next) => {
   Promise.resolve(handlerGetChirpById(req, res)).catch(next);
 });
 
+app.delete("/api/chirps/:chirpId", (req, res, next) => {
+  Promise.resolve(handlerDeleteChirp(req, res)).catch(next);
+});
+
 app.post("/api/chirps", (req, res, next) => {
   Promise.resolve(handlerCreateChirps(req, res)).catch(next);
 });
-//
+
+//Webhooks
+app.post("/api/polka/webhooks", (req, res, next) => {
+  Promise.resolve(handlerPolkaWebhook(req, res)).catch(next)
+})
 
 
 app.use(errorLogMiddleware);

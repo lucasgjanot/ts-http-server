@@ -3,18 +3,18 @@ import { BadRequestError } from "../errors.js";
 import { respondWithJSON } from "./json.js";
 import { createUser, upateUser } from "../db/query/user.js";
 import { User, NewUser } from "../db/schema.js";
-import { getBearerToken, hashPassword, validateJWT, validateToken } from "../auth.js";
+import { hashPassword, validateToken } from "../auth.js";
 import { LogLevel } from "../config.js";
 import { log } from "../logger.js";
-import { getRefreshToken } from "src/db/query/refreshtoken.js";
+
 
 
 export type UserResponse = Omit<User, "hashedPassword">;
 
 
 export function userResponse(user: User): UserResponse {
-    const { id, email, createdAt, updatedAt} = user;
-    return {id, email, createdAt, updatedAt};
+    const { id, email, createdAt, updatedAt, isChirpyRed} = user;
+    return {id, email, createdAt, updatedAt, isChirpyRed};
 }
 
 export async function handlerCreateUser(req: Request, res: Response) {
@@ -63,7 +63,7 @@ export async function handlerUpdateUser(req: Request, res: Response) {
     log(LogLevel.DEBUG, `Starting user update: ${user.id}`);
     const updatedUser: User = await upateUser(user.email, params.email, hashedPassword)
     if (!updatedUser) {
-        throw new Error("Failed to update user")
+        throw new Error(`Failed to update user: ${user.id}`)
     }
     respondWithJSON(res,200,userResponse(updatedUser));
     log(LogLevel.INFO, `User successfully updated: ${user.id}`);

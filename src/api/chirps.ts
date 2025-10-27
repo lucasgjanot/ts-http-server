@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import { respondWithJSON } from "./json.js";
-import { BadRequestError, NotFoundError } from "../errors.js";
+import { BadRequestError, NotFoundError, UserForbiddenError } from "../errors.js";
 import { Chirp, NewChirp, User } from "../db/schema.js";
-import { createChirp, getChirpById, getChirps } from "../db/query/chirp.js";
+import { createChirp, deleteChirp, getChirpById, getChirps, getChirpsByUser} from "../db/query/chirp.js";
 import { getUserbyId } from "../db/query/user.js";
-import { getBearerToken, validateJWT } from "../auth.js";
+import { getBearerToken, validateJWT, validateToken } from "../auth.js";
 import { log } from "../logger.js";
 import { LogLevel } from "../config.js";
+import { validate as isUuid } from "uuid";
 
 const MAX_CHIRP_LENGTH = 140;
 const BAD_WORDS = ["kerfuffle", "sharbert", "fornax"];
@@ -36,13 +37,16 @@ function getCleanedBody(body: string, badWords: string[]) {
 }
 
 export async function handlerCreateChirps(req: Request, res: Response) {
-  const params = req.body as { body: string };
+  type parameters = {
+    body: string
+  }
+  const params: parameters = req.body
   const token = getBearerToken(req);
   const userId = validateJWT(token);
 
   log(LogLevel.DEBUG, `User ${userId} is attempting to create a chirp`);
 
-  if (!params?.body) {
+  if (!params || !params.body) {
     throw new BadRequestError("missing required fields");
   }
 
@@ -60,9 +64,28 @@ export async function handlerCreateChirps(req: Request, res: Response) {
 }
 
 export async function handlerGetChirps(req: Request, res: Response) {
-  log(LogLevel.DEBUG, `Fetching all chirps`);
-  const result = await getChirps();
-  respondWithJSON(res, 200, result.map(chirpResponse));
+  try {
+    const authorIdQuery = req.query.authorId;
+    const authorId = typeof authorIdQuery === "string" ? authorIdQuery : "";
+
+    log(LogLevel.DEBUG, `Fetching chirps${authorId ? ` for user ${authorId}` : ""}`);
+
+    let result: Chirp[] = [];
+
+    if (authorId) {
+      if (!isUuid(authorId)) {
+        return respondWithJSON(res, 200, []);
+      }
+      result = await getChirpsByUser(authorId);
+    } else {
+      result = await getChirps();
+    }
+
+    respondWithJSON(res, 200, (result ?? []).map(chirpResponse));
+  } catch (err) {
+    log(LogLevel.ERROR, "Failed to fetch chirps", err);
+    respondWithJSON(res, 500, { error: "Failed to fetch chirps" });
+  }
 }
 
 export async function handlerGetChirpById(req: Request, res: Response) {
@@ -75,4 +98,25 @@ export async function handlerGetChirpById(req: Request, res: Response) {
   }
 
   respondWithJSON(res, 200, chirpResponse(chirp));
+}
+
+export async function handlerDeleteChirp(req: Request, res: Response) {
+  const user = await validateToken(req);
+  const {chirpId} = req.params;
+  const chirp = await getChirpById(chirpId);
+  if (!chirp) {
+    throw new NotFoundError(`Chirp with chirpId: ${chirpId} not found`);
+  }
+  if (user.id != chirp.userId) {
+    throw new UserForbiddenError("This user can't do this");
+  }
+  log(LogLevel.DEBUG, `Atempt to delete chirp with id ${chirp.id}`);
+  const result = await deleteChirp(chirp.id);
+  if (!result) {
+    throw new Error(`Failed to delete chirp: ${chirp.id}`);
+  }
+  log(LogLevel.INFO, `Success on deleting chirp: ${result.id}`);
+
+  res.status(204).send();
+
 }

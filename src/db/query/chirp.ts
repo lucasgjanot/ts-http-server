@@ -30,6 +30,19 @@ export async function getChirps() {
     
 }
 
+export async function getChirpsByUser(userId: string) {
+    try {
+        const result = await db
+            .select()
+            .from(chirps)
+            .where(eq(chirps.userId, userId))
+        return result
+    } catch (err) {
+        throw new DatabaseError("Failed to retrieve chirps", err);
+    }
+    
+}
+
 export async function getChirpById(id: string) {
     try {
         const [result] = await db
@@ -46,7 +59,8 @@ export async function deleteChirp(id: string) {
     try {
         const [result] = await db
             .delete(chirps)
-            .where(eq(chirps.id, id));
+            .where(eq(chirps.id, id))
+            .returning();
         return result;
     } catch (err) {
         throw new DatabaseError("Failed to retrieve chirp", err);

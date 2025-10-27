@@ -7,11 +7,14 @@ import { Request } from "express";
 import { config } from "./config.js";
 import { randomBytes } from "crypto";
 import { getUserbyId } from "./db/query/user.js";
-import { getRefreshToken } from "./db/query/refreshtoken.js";
+import { createRefreshToken, getRefreshToken, revokeRefreshToken } from "./db/query/refreshtoken.js";
+import { NewRefreshTokens } from "./db/schema.js";
 
 const TOKEN_ISSUER = config.jwt.issuer;
 const SECRET = config.jwt.secret;
 const JWT_DURATION = config.jwt.duration;
+const REFRESH_DURATION_DAYS = config.refreshToken.duration;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 
 type Payload = Pick<JwtPayload, "iss" | "sub" | "iat" | "exp">;
@@ -63,18 +66,25 @@ export function validateJWT(tokenString: string, secret: string = SECRET) {
 export function getBearerToken(req: Request): string {
     const authHeader = req.get("Authorization");
     if (!authHeader) {
-        throw new UserNotAuthenticatedError("Invalid Token")
+        throw new UserNotAuthenticatedError("Missing Authorization header");
     }
-    const token = extractBearerToken(authHeader);
-    return token;
+    const [type, token] = authHeader.split(" ");
+    if (type !== "Bearer" || !token) {
+    throw new UserNotAuthenticatedError("Invalid Bearer token format");
+    }
+    return token;  
 }
 
-export function extractBearerToken(header: string) {
-  const splitAuth = header.split(" ");
-  if (splitAuth.length < 2 || splitAuth[0] !== "Bearer") {
-    throw new UserNotAuthenticatedError("Invalid Token")
-  }
-  return splitAuth[1];
+export function getAPIKey(req: Request): string {
+    const authHeader = req.get("Authorization");
+    if (!authHeader) {
+        throw new UserNotAuthenticatedError("Missing Authorization header");
+    }
+    const [type, token] = authHeader.split(" ");
+    if (type !== "ApiKey" || !token) {
+    throw new UserNotAuthenticatedError("Invalid ApiKey token format");
+    }
+    return token;  
 }
 
 export function makeRefreshToken() {
@@ -83,21 +93,59 @@ export function makeRefreshToken() {
 
 
 export async function validateToken(req: Request) {
-  const token = getBearerToken(req);
   try {
-    const info = validateJWT(token);
-    const user = await getUserbyId(info);
-    if (!user) {
-      throw new NotFoundError("User not found");
-    }
+    const jwtToken = getBearerToken(req);
+    const userId = validateJWT(jwtToken);
+    const user = await getUserbyId(userId);
+    if (!user) throw new NotFoundError("User not found");
     return user;
   } catch (err) {
-    const info = await getRefreshToken(token);
-    if (!info || info.revokedAt || info.expiresAt < new Date()) {
-      throw new UserNotAuthenticatedError("Invalid Token")
+    const refreshToken = req.body?.refreshToken || req.cookies?.refreshToken;
+    if (!refreshToken) throw new UserNotAuthenticatedError("No refresh token provided");
+    const stored = await getRefreshToken(refreshToken);
+    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
+      throw new UserNotAuthenticatedError("Invalid or expired refresh token");
     }
-    const user = await getUserbyId(info.userId);
+    const user = await getUserbyId(stored.userId);
+    if (!user) throw new NotFoundError("User not found");
     return user;
   }
-
 }
+
+export async function renewTokens(refreshTokenString: string) {
+  const stored = await getRefreshToken(refreshTokenString);
+  if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
+    throw new UserNotAuthenticatedError("Invalid refresh token");
+  }
+  const user = await getUserbyId(stored.userId);
+  if (!user) throw new NotFoundError("User not found");
+
+  const newJwt = makeJWT(user.id)
+  const newRefreshToken = makeRefreshToken();
+  const createdAt = new Date();
+  const expiresAt = new Date(createdAt.getTime() + REFRESH_DURATION_DAYS * MS_PER_DAY)
+
+  // Salvar novo refresh token e revogar o antigo
+  await revokeRefreshToken(stored.token);
+
+  await createRefreshToken({token: newRefreshToken, userId: user.id, createdAt, expiresAt } satisfies NewRefreshTokens);
+
+  return { token: newJwt, refreshToken: newRefreshToken };
+}
+
+export async function handleLoginSuccess(userId: string) {
+  const token = makeJWT(userId);
+  const refreshToken = await makeRefreshToken();
+  const createdAt = new Date();
+  const expiresAt = new Date(createdAt.getTime() + REFRESH_DURATION_DAYS * MS_PER_DAY);
+
+  await createRefreshToken({
+    userId,
+    token: refreshToken,
+    createdAt,
+    expiresAt,
+  });
+
+  return { token, refreshToken };
+}
+

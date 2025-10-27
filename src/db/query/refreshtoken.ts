@@ -34,7 +34,7 @@ export async function getRefreshToken(tokenString: string) {
 export async function revokeRefreshToken(token: string) {
   const rows = await db
     .update(refreshTokens)
-    .set({ expiresAt: new Date() })
+    .set({ revokedAt: new Date() })
     .where(eq(refreshTokens.token, token))
     .returning();
 

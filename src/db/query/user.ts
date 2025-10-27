@@ -91,3 +91,17 @@ export async function upateUser(email: string, newEmail: string, newHashedPasswo
         throw new DatabaseError("Failed to retrieve user", err);
     } 
 }
+
+export async function upgradeUser(id: string) {
+    try {
+        const [user] = await db
+            .update(users)
+            .set({isChirpyRed:true})
+            .where(eq(users.id, id))
+            .returning()
+        return user
+    } catch (err) {
+        throw new DatabaseError("Failed to upgrade user")
+    }
+    
+}
