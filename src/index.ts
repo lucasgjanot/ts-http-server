@@ -2,21 +2,22 @@ import express from "express";
 import { handlerReset } from "./admin/metrics/reset.js";
 import { handlerReadiness } from "./api/readiness.js";
 import { handlerMetrics } from "./admin/metrics/metrics.js";
-import { config } from "./config.js";
-import { handlerCreateUser } from "./api/users.js";
+import { config, LogLevel } from "./config.js";
+import { handlerCreateUser, handlerUpdateUser } from "./api/users.js";
 import { handlerLogin, handlerRefresh, handlerRevoke } from "./api/auth.js";
 import { accessLogMiddleware } from "./middlewares/acceslog.js";
 import { middlewareMetricsInc } from "./middlewares/metrics.js";
-import { serverOutMiddleware } from "./middlewares/serverlog.js";
 import { errorLogMiddleware } from "./middlewares/errorlog.js";
 import { handlerCreateChirps, handlerGetChirpById, handlerGetChirps } from "./api/chirps.js";
+import { log } from "./logger.js";
 
 const app = express();
 const PORT = config.api.port;
 
-app.use(accessLogMiddleware);
-app.use(serverOutMiddleware)
+
 app.use(express.json());
+app.use(accessLogMiddleware);
+
 
 app.use("/app", middlewareMetricsInc, express.static("./src/app"));
 
@@ -33,6 +34,9 @@ app.post("/admin/reset", (req, res, next) => {
 
 app.post("/api/users", (req, res, next) => {
   Promise.resolve(handlerCreateUser(req, res)).catch(next);
+})
+app.put("/api/users", (req, res, next) => {
+  Promise.resolve(handlerUpdateUser(req, res)).catch(next);
 })
 
 app.post("/api/login", (req, res, next) => {
@@ -62,6 +66,6 @@ app.post("/api/revoke", (req, res, next) => {
 app.use(errorLogMiddleware);
 
 app.listen(PORT, () => {
-    console.log(`Server is running at http://localhost:${PORT}`);
+    log(LogLevel.INFO, `Server is running at http://localhost:${PORT}`);
 });
 

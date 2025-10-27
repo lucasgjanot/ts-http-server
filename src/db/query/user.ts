@@ -50,6 +50,44 @@ export async function getUserbyId(id: string) {
         return result;
     } catch (err) {
         throw new DatabaseError("Failed to retrieve user", err);
-    }
-    
+    } 
+}
+
+export async function upateUserEmail(email: string, newEmail: string) {
+    try {
+        const [result] = await db
+            .update(users)
+            .set({email: newEmail})
+            .where(eq(users.email, email))
+            .returning()
+        return result;
+    } catch (err) {
+        throw new DatabaseError("Failed to retrieve user", err);
+    } 
+}
+
+export async function upateUserPassword(email: string, newHashedPassword: string) {
+    try {
+        const [result] = await db
+            .update(users)
+            .set({hashedPassword: newHashedPassword})
+            .where(eq(users.email, email))
+            .returning()
+        return result;
+    } catch (err) {
+        throw new DatabaseError("Failed to retrieve user", err);
+    } 
+}
+
+export async function upateUser(email: string, newEmail: string, newHashedPassword: string) {
+    try {
+        const [result] = await db
+            .update(users)
+            .set({email: newEmail,hashedPassword: newHashedPassword})
+            .where(eq(users.email, email))
+            .returning()
+        return result;
+    } catch (err) {
+        throw new DatabaseError("Failed to retrieve user", err);
+    } 
 }

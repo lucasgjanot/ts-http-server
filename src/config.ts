@@ -1,12 +1,12 @@
 import type { MigrationConfig } from "drizzle-orm/migrator";
 
-
 export enum LogLevel {
     DEBUG = "DEBUG",
     INFO = "INFO",
     WARN = "WARN",
     ERROR = "ERROR",
 }
+
 
 type Config = {
   api: APIConfig;

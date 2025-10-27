@@ -2,10 +2,12 @@ import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import type { JwtPayload } from "jsonwebtoken";
 
-import { BadRequestError, UserNotAuthenticatedError } from "./errors.js";
+import { BadRequestError, NotFoundError, UserNotAuthenticatedError } from "./errors.js";
 import { Request } from "express";
 import { config } from "./config.js";
 import { randomBytes } from "crypto";
+import { getUserbyId } from "./db/query/user.js";
+import { getRefreshToken } from "./db/query/refreshtoken.js";
 
 const TOKEN_ISSUER = config.jwt.issuer;
 const SECRET = config.jwt.secret;
@@ -61,7 +63,7 @@ export function validateJWT(tokenString: string, secret: string = SECRET) {
 export function getBearerToken(req: Request): string {
     const authHeader = req.get("Authorization");
     if (!authHeader) {
-        throw new BadRequestError("Malformed authorization header");
+        throw new UserNotAuthenticatedError("Invalid Token")
     }
     const token = extractBearerToken(authHeader);
     return token;
@@ -70,11 +72,32 @@ export function getBearerToken(req: Request): string {
 export function extractBearerToken(header: string) {
   const splitAuth = header.split(" ");
   if (splitAuth.length < 2 || splitAuth[0] !== "Bearer") {
-    throw new BadRequestError("Malformed authorization header");
+    throw new UserNotAuthenticatedError("Invalid Token")
   }
   return splitAuth[1];
 }
 
 export function makeRefreshToken() {
   return randomBytes(32).toString('hex')
+}
+
+
+export async function validateToken(req: Request) {
+  const token = getBearerToken(req);
+  try {
+    const info = validateJWT(token);
+    const user = await getUserbyId(info);
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+    return user;
+  } catch (err) {
+    const info = await getRefreshToken(token);
+    if (!info || info.revokedAt || info.expiresAt < new Date()) {
+      throw new UserNotAuthenticatedError("Invalid Token")
+    }
+    const user = await getUserbyId(info.userId);
+    return user;
+  }
+
 }
