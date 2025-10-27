@@ -3,3 +3,4 @@ dist/
 server.log
 .env
 log/
+requests.http
