@@ -64,28 +64,18 @@ export async function handlerCreateChirps(req: Request, res: Response) {
 }
 
 export async function handlerGetChirps(req: Request, res: Response) {
-  try {
-    const authorIdQuery = req.query.authorId;
-    const authorId = typeof authorIdQuery === "string" ? authorIdQuery : "";
-
-    log(LogLevel.DEBUG, `Fetching chirps${authorId ? ` for user ${authorId}` : ""}`);
-
-    let result: Chirp[] = [];
-
-    if (authorId) {
-      if (!isUuid(authorId)) {
-        return respondWithJSON(res, 200, []);
-      }
-      result = await getChirpsByUser(authorId);
-    } else {
-      result = await getChirps();
-    }
-
-    respondWithJSON(res, 200, (result ?? []).map(chirpResponse));
-  } catch (err) {
-    log(LogLevel.ERROR, "Failed to fetch chirps", err);
-    respondWithJSON(res, 500, { error: "Failed to fetch chirps" });
+  const chirps = await getChirps();
+  let authorId = "";
+  let authorIdQuery = req.query.authorId;
+  if (typeof authorIdQuery === "string") {
+    authorId = authorIdQuery;
   }
+
+  const filteredChirps = chirps.filter(
+    (chirp) => chirp.userId === authorId || authorId === ""
+  )
+    
+  respondWithJSON(res,200, filteredChirps);
 }
 
 export async function handlerGetChirpById(req: Request, res: Response) {

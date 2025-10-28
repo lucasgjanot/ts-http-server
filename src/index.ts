@@ -3,7 +3,7 @@ import { handlerReset } from "./admin/metrics/reset.js";
 import { handlerReadiness } from "./api/readiness.js";
 import { handlerMetrics } from "./admin/metrics/metrics.js";
 import { config, LogLevel } from "./config.js";
-import { handlerCreateUser, handlerUpdateUser } from "./api/users.js";
+import { handlerCreateUser, handlerGetUsers, handlerUpdateUser } from "./api/users.js";
 import { handlerLogin, handlerRefresh, handlerRevoke } from "./api/auth.js";
 import { accessLogMiddleware } from "./middlewares/acceslog.js";
 import { middlewareMetricsInc } from "./middlewares/metrics.js";
@@ -48,7 +48,12 @@ app.post("/api/login", (req, res, next) => {
 })
 
 // users
-
+app.get("/api/users", (req, res, next) => {
+  Promise.resolve(handlerGetUsers(req, res)).catch(next);
+})
+app.get("/api/users/:userId", (req, res, next) => {
+  Promise.resolve(handlerGetUsers(req, res)).catch(next);
+})
 app.post("/api/users", (req, res, next) => {
   Promise.resolve(handlerCreateUser(req, res)).catch(next);
 })

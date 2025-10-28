@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { BadRequestError } from "../errors.js";
 import { respondWithJSON } from "./json.js";
-import { createUser, upateUser } from "../db/query/user.js";
+import { createUser, getUsers, upateUser } from "../db/query/user.js";
 import { User, NewUser } from "../db/schema.js";
 import { hashPassword, validateToken } from "../auth.js";
 import { LogLevel } from "../config.js";
@@ -67,4 +67,10 @@ export async function handlerUpdateUser(req: Request, res: Response) {
     }
     respondWithJSON(res,200,userResponse(updatedUser));
     log(LogLevel.INFO, `User successfully updated: ${user.id}`);
+}
+
+export async function handlerGetUsers(req: Request, res: Response) {
+    const users = await getUsers();
+    respondWithJSON(res,200,users.map((user) => userResponse(user)))
+    
 }

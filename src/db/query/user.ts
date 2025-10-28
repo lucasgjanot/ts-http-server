@@ -105,3 +105,15 @@ export async function upgradeUser(id: string) {
     }
     
 }
+
+export async function getUsers() {
+    try {
+        const user = await db
+            .select()
+            .from(users)
+        return user
+    } catch (err) {
+        throw new DatabaseError("Failed to upgrade user")
+    }
+    
+}
