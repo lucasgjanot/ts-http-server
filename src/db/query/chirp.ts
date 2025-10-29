@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { db } from "../index.js";
 import { chirps, NewChirp } from "../schema.js";
 import { DatabaseError } from "../../errors.js";
@@ -18,16 +18,19 @@ export async function createChirp(chirp: NewChirp) {
     }
 }
 
-export async function getChirps() {
+export async function getChirps(sort: "asc" | "desc" = "asc") {
     try {
+        const sortFn = sort === "asc" ? asc : desc;
+
         const result = await db
             .select()
             .from(chirps)
-        return result
+            .orderBy(sortFn(chirps.createdAt));
+
+        return result;
     } catch (err) {
         throw new DatabaseError("Failed to retrieve chirps", err);
     }
-    
 }
 
 export async function getChirpsByUser(userId: string) {
