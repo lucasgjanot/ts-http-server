@@ -3,7 +3,7 @@ import { handlerReset } from "./admin/metrics/reset.js";
 import { handlerReadiness } from "./api/readiness.js";
 import { handlerMetrics } from "./admin/metrics/metrics.js";
 import { config, LogLevel } from "./config.js";
-import { handlerCreateUser, handlerGetUsers, handlerUpdateUser } from "./api/users.js";
+import { handlerCreateUser, handlerGetUser, handlerGetUsers, handlerUpdateUser } from "./api/users.js";
 import { handlerLogin, handlerRefresh, handlerRevoke } from "./api/auth.js";
 import { accessLogMiddleware } from "./middlewares/acceslog.js";
 import { middlewareMetricsInc } from "./middlewares/metrics.js";
@@ -11,6 +11,7 @@ import { errorLogMiddleware } from "./middlewares/errorlog.js";
 import { handlerCreateChirps, handlerDeleteChirp, handlerGetChirpById, handlerGetChirps } from "./api/chirps.js";
 import { log } from "./logger.js";
 import { handlerPolkaWebhook } from "./api/webhooks.js";
+import { NotFoundError } from "./errors.js";
 
 const app = express();
 const PORT = config.api.port;
@@ -22,6 +23,9 @@ app.use(accessLogMiddleware);
 
 app.use("/app", middlewareMetricsInc, express.static("./src/app"));
 
+app.get("/api/healthz", (req, res, next) => {
+  Promise.resolve(handlerReadiness(req, res)).catch(next);
+});
 
 app.get("/admin/metrics", (req, res, next) => {
   Promise.resolve(handlerMetrics(req, res)).catch(next);
@@ -39,10 +43,6 @@ app.post("/api/revoke", (req, res, next) => {
   Promise.resolve(handlerRevoke(req, res).catch(next))
 })
 
-app.get("/api/healthz", (req, res, next) => {
-  Promise.resolve(handlerReadiness(req, res)).catch(next);
-});
-
 app.post("/api/login", (req, res, next) => {
   Promise.resolve(handlerLogin(req, res)).catch(next);
 })
@@ -52,7 +52,7 @@ app.get("/api/users", (req, res, next) => {
   Promise.resolve(handlerGetUsers(req, res)).catch(next);
 })
 app.get("/api/users/:userId", (req, res, next) => {
-  Promise.resolve(handlerGetUsers(req, res)).catch(next);
+  Promise.resolve(handlerGetUser(req, res)).catch(next);
 })
 app.post("/api/users", (req, res, next) => {
   Promise.resolve(handlerCreateUser(req, res)).catch(next);
@@ -82,7 +82,6 @@ app.post("/api/chirps", (req, res, next) => {
 app.post("/api/polka/webhooks", (req, res, next) => {
   Promise.resolve(handlerPolkaWebhook(req, res)).catch(next)
 })
-
 
 app.use(errorLogMiddleware);
 

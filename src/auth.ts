@@ -2,7 +2,7 @@ import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import type { JwtPayload } from "jsonwebtoken";
 
-import { BadRequestError, NotFoundError, UserNotAuthenticatedError } from "./errors.js";
+import { NotFoundError, UserNotAuthenticatedError } from "./errors.js";
 import { Request } from "express";
 import { config } from "./config.js";
 import { randomBytes } from "crypto";

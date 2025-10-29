@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { BadRequestError } from "../errors.js";
+import { BadRequestError, NotFoundError } from "../errors.js";
 import { respondWithJSON } from "./json.js";
-import { createUser, getUsers, upateUser } from "../db/query/user.js";
+import { createUser, getUserbyId, getUsers, upateUser } from "../db/query/user.js";
 import { User, NewUser } from "../db/schema.js";
 import { hashPassword, validateToken } from "../auth.js";
 import { LogLevel } from "../config.js";
@@ -71,6 +71,12 @@ export async function handlerUpdateUser(req: Request, res: Response) {
 
 export async function handlerGetUsers(req: Request, res: Response) {
     const users = await getUsers();
-    respondWithJSON(res,200,users.map((user) => userResponse(user)))
-    
+    respondWithJSON(res,200,users.map((user) => userResponse(user))) 
+}
+
+export async function handlerGetUser(req: Request, res: Response) {
+    const { userId } = req.params; 
+    const user = await getUserbyId(userId);
+    if (!user) throw new NotFoundError("User not found");
+    respondWithJSON(res,200, userResponse(user));
 }

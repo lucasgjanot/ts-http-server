@@ -3,7 +3,6 @@ import { db } from "../index.js";
 import { NewRefreshTokens, refreshTokens, users } from "../schema.js";
 import { DatabaseError } from "../../errors.js";
 import { and, eq, gt, isNull } from "drizzle-orm";
-import { date } from "drizzle-orm/mysql-core/index.js";
 
 
 export async function createRefreshToken(token: NewRefreshTokens) {

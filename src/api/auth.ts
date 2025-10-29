@@ -1,15 +1,14 @@
 import { Request, Response } from "express";
 import { BadRequestError, UserNotAuthenticatedError } from "../errors.js";
-import { NewRefreshTokens, User } from "../db/schema.js";
+import { User } from "../db/schema.js";
 import { getUserbyEmail } from "../db/query/user.js";
 import { UserResponse, userResponse } from "./users.js";
 import { respondWithJSON } from "./json.js";
 import { checkPasswordHash, getBearerToken, handleLoginSuccess, makeJWT, makeRefreshToken } from "../auth.js";
-import { createRefreshToken, revokeRefreshToken, userForRefreshToken } from "../db/query/refreshtoken.js";
-import { config } from "../config.js";
+import { revokeRefreshToken, userForRefreshToken } from "../db/query/refreshtoken.js";
 import { log } from "../logger.js";
 import { LogLevel } from "../config.js";
-import { ConsoleLogWriter } from "drizzle-orm";
+
 
 
 type TokenResponse = {

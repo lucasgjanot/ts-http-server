@@ -2,12 +2,11 @@ import { Request, Response } from "express";
 import { respondWithJSON } from "./json.js";
 import { BadRequestError, NotFoundError, UserForbiddenError } from "../errors.js";
 import { Chirp, NewChirp, User } from "../db/schema.js";
-import { createChirp, deleteChirp, getChirpById, getChirps, getChirpsByUser} from "../db/query/chirp.js";
+import { createChirp, deleteChirp, getChirpById, getChirps} from "../db/query/chirp.js";
 import { getUserbyId } from "../db/query/user.js";
 import { getBearerToken, validateJWT, validateToken } from "../auth.js";
 import { log } from "../logger.js";
 import { LogLevel } from "../config.js";
-import { validate as isUuid } from "uuid";
 
 const MAX_CHIRP_LENGTH = 140;
 const BAD_WORDS = ["kerfuffle", "sharbert", "fornax"];
