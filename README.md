@@ -1,6 +1,62 @@
 # Chirp API - [Boot.dev](https://boot.dev) Project
 
-## `User` resource
+## Introduction
+
+**Chirp API** is a simple RESTful service for managing users, authentication, and short messages (“chirps”), built as part of the [Boot.dev](https://boot.dev)  backend project. It demonstrates core backend concepts such as:
+
+- User registration and authentication (JWT + refresh tokens)
+- CRUD operations for Chirp messages
+- Basic admin metrics and database reset endpoints
+- Proper logging with levels (DEBUG, INFO, WARN, ERROR)
+- Input validation and error handling
+
+This project is ideal for learning modern TypeScript backend practices, including database integration, authentication, and API design.
+
+## Installation
+
+Follow these steps to get the project running locally:
+
+1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd chirp-api
+```
+
+2. Install dependencies
+
+```bash
+npm install
+```
+
+3. Set environment variables
+
+  Create a .env file in the project root:
+
+  ```bash
+  DB_URL="<connection_url>"
+  PLATFORM="dev"
+  JWT_SECRET="<some_secret>"
+  POLKA_KEY="<some_secret>"
+  ```
+
+4. Run database migrations (if needed)
+
+```bash
+npm run migrate
+```
+
+5. Start the server
+
+```bash
+npm run dev
+```
+
+The server should now be running at http://localhost:8080. You can test the endpoints using a tool like Postman or curl.
+
+## API Documentation
+
+### `User` resource
 ```json
 {
   "id": "40ad210f-a739-4f6b-bb57-f401c06c7a35",
@@ -11,15 +67,15 @@
 }
 ```
 
-### GET /api/users
+#### GET /api/users
 
 Returns an array of `Users`.
 
-### GET /api/users/:userId
+#### GET /api/users/:userId
 
 Return `User` with `userId` if it exists, otherwise returns `HTTP Error 404`.
 
-### POST /api/users
+#### POST /api/users
 
 Creates a new `User`.
 
@@ -44,9 +100,9 @@ Creates a new `User`.
 }
 ```
 
-### PUT /api/user
+#### PUT /api/user
 
-#### Authentication
+##### Authentication
 
 Requires `Authorization Header` with a valid `Bearer Token`.
 ```makefile
@@ -74,9 +130,9 @@ Authorization: Bearer <valid_token>
 }
 ```
 
-## `Auth` resource
+### `Auth` resource
 
-### POST /api/login
+#### POST /api/login
 
 Authenticates an existing `User` and returns `User` with access and refresh tokens.
 
@@ -103,9 +159,9 @@ Authenticates an existing `User` and returns `User` with access and refresh toke
 }
 ```
 
-### POST /api/refresh
+#### POST /api/refresh
 Returns new `token` and new `refreshToken` for `User`
-#### Authentication
+##### Authentication
 
 Requires `Authorization Header` with a valid `Bearer Refresh Token`.
 ```makefile
@@ -120,9 +176,9 @@ Authorization: Bearer <valid_refresh_token>
 }
 ```
 
-### POST /api/revoke
+#### POST /api/revoke
 
-#### Authentication
+##### Authentication
 
 Requires `Authorization Header` with a valid `Bearer Refresh Token`.
 ```makefile
@@ -131,7 +187,7 @@ Authorization: Bearer <valid_refresh_token>
 
 **Response**: HTTP 204 on Success.
 
-## `Chirp` resource
+### `Chirp` resource
 ```json
 {
   "id": "831e1728-ff0c-48b5-a4f4-57cc0266d219",
@@ -141,19 +197,30 @@ Authorization: Bearer <valid_refresh_token>
   "userId": "737b3766-fc7f-4040-b42e-32d6393eaee9"
 }
 ```
-### GET /api/chirps
+#### GET /api/chirps
 
 Returns a array of `Chirps`
+You can optionally filter by author using the authorId query parameter.
 
-### GET /api/chirps/:chirpId
+| Parameter  | Type   | Required | Description                                                     |
+| ---------- | ------ | -------- | --------------------------------------------------------------- |
+| `authorId` | string | ❌ No     | Filters the chirps to only those created by the specified user. |
+
+##### Example
+```http
+GET /api/chirps?authorId=737b3766-fc7f-4040-b42e-32d6393eaee9 HTTP/1.1 # Returns only this user chirps
+GET /api/chirps HTTP/1.1  # Returns all chirps
+```
+
+#### GET /api/chirps/:chirpId
 
 Return `Chirp` with `chirpId` if it exists, otherwise returns `HTTP Error 404`.
 
-### POST /api/chirps
+#### POST /api/chirps
 
 Creates a new `Chirp`.
 
-#### Authentication
+##### Authentication
 
 Requires `Authorization Header` with a valid `Bearer Token`.
 ```makefile
@@ -177,30 +244,30 @@ Authorization: Bearer <valid_token>
 }
 ```
 
-### DELETE /api/chirps/:chirpId
+#### DELETE /api/chirps/:chirpId
 
 Delete `Chirp` with `chirpId` if exists, otherwise returns HTTP Error 404. 
 
-#### Authentication
+##### Authentication
 
 Requires `Authorization Header` with a valid `Bearer Token`.
 ```makefile
 Authorization: Bearer <valid_token>
 ```
 
-## `Admin` Resource
+### `Admin` Resource
 
-### GET /admin/metrics
+#### GET /admin/metrics
 
 Return server hits
 
-### POST /admin/reset
+#### POST /admin/reset
 
 Delete all resources from database and set hits count to 0 (Only works at dev platform)
 
-## `Readiness` Resource
+### `Readiness` Resource
 
-### GET /api/healthz
+#### GET /api/healthz
 
 Returns a simple response indicating that the server is running and reachable.
 
