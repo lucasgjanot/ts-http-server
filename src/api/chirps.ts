@@ -101,8 +101,10 @@ export async function handlerGetChirpById(req: Request, res: Response) {
 
 export async function handlerDeleteChirp(req: Request, res: Response) {
   const user = await validateToken(req);
+  console.log(user)
   const {chirpId} = req.params;
   const chirp = await getChirpById(chirpId);
+  console.log(chirp)
   if (!chirp) {
     throw new NotFoundError(`Chirp with chirpId: ${chirpId} not found`);
   }

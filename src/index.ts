@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(accessLogMiddleware);
 
 
-app.use("/app", middlewareMetricsInc, express.static("./src/app"));
+app.use("/", middlewareMetricsInc, express.static("./src/app"));
 
 app.get("/api/healthz", (req, res, next) => {
   Promise.resolve(handlerReadiness(req, res)).catch(next);
