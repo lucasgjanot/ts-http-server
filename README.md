@@ -20,7 +20,7 @@ Follow these steps to get the project running locally:
 
 ```bash
 git clone <repository-url>
-cd chirp-api
+cd ts-http-server
 ```
 
 2. Install dependencies
